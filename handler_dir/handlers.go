@@ -1,6 +1,7 @@
 package handler_dir
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
@@ -82,6 +83,88 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	EncodeErr := json.NewEncoder(w).Encode(userToken)
 	if EncodeErr != nil {
 		log.Fatal(EncodeErr)
+	}
+
+}
+
+func CreateTask(w http.ResponseWriter, r *http.Request) {
+	db := database_dir.DBconnect()
+	var todoTask model_dir.Todolist
+	err := json.NewDecoder(r.Body).Decode(&todoTask)
+	if err != nil {
+		log.Fatal(err)
+	}
+	query := "Insert into todolist(user_id, task, completed,archived) values($1,$2,$3,$4)"
+
+	_, er := db.Exec(query, todoTask.UserId, todoTask.Task, todoTask.Completed, todoTask.Archived)
+	if er != nil {
+		log.Fatal(er)
+	}
+	//defer db.Close()
+}
+func GetTask(w http.ResponseWriter, r *http.Request) {
+	db := database_dir.DBconnect()
+
+	rows, err := db.Query("SELECT * FROM todolist order by task")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var items []model_dir.Todolist
+
+	for rows.Next() {
+		var item model_dir.Todolist
+		err := rows.Scan(&item.UserId, &item.Task, &item.Completed, &item.Archived)
+		if err != nil {
+			log.Fatal(err)
+		}
+		items = append(items, item)
+	}
+
+	itemsBytes, _ := json.MarshalIndent(items, "", "\t")
+
+	w.Header().Set("Content-Type", "application/json")
+	_, er := w.Write(itemsBytes)
+	if er != nil {
+		log.Fatal(er)
+	}
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(rows)
+	//defer db.Close()
+}
+
+func DoneTask(w http.ResponseWriter, r *http.Request) {
+	db := database_dir.DBconnect()
+	var Task model_dir.TodoTask
+	err := json.NewDecoder(r.Body).Decode(&Task)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	query := "update todolist set completed=true where task=$1"
+	_, er := db.Exec(query, Task.Task)
+	if er != nil {
+		log.Fatal(er)
+	}
+
+}
+
+func ArchiveTask(w http.ResponseWriter, r *http.Request) {
+	db := database_dir.DBconnect()
+	var Task model_dir.TodoTask
+	err := json.NewDecoder(r.Body).Decode(&Task)
+	if err != nil {
+		log.Fatal(err)
+	}
+	query := "update todolist set archived=true where task=$1"
+	_, er := db.Exec(query, Task.Task)
+	if er != nil {
+		log.Fatal(er)
 	}
 
 }

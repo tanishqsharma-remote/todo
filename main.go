@@ -13,6 +13,17 @@ import (
 	"todo/middleware_dir"
 )
 
+func todoHandlers() http.Handler {
+	rg := chi.NewRouter()
+	rg.Group(func(r chi.Router) {
+		r.Get("/", handler_dir.GetTask)
+		r.Post("/", handler_dir.CreateTask)
+		r.Put("/", handler_dir.DoneTask)
+		r.Delete("/", handler_dir.ArchiveTask)
+	})
+	return rg
+}
+
 func main() {
 
 	db := database_dir.DBconnect()
@@ -34,6 +45,7 @@ func main() {
 	r.Post("/signup", handler_dir.SignUp)
 	r.Post("/login", handler_dir.Login)
 	r.HandleFunc("/home", middleware_dir.AuthMiddleware(handler_dir.Home))
+	r.Mount("/todo", todoHandlers())
 	err1 := http.ListenAndServe(":8080", r)
 	if err1 != nil {
 		log.Fatalf("Error")

@@ -1,2 +1,2 @@
 create table if not exists users(id serial primary key , username varchar, password varchar);
-create table if not exists todolist(task_id int primary key,user_id int , task varchar, completed bool, foreign key (user_id) references users(id));
+create table if not exists todolist(user_id int , task varchar primary key , completed bool, archived bool, foreign key (user_id) references users(id));

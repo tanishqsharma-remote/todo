@@ -8,11 +8,15 @@ type User struct {
 	Password string `json:"Password"`
 }
 
+type TodoTask struct {
+	Task string `json:"Task"`
+}
+
 type Todolist struct {
-	TaskId    int    `json:"Task_Id"`
 	UserId    int    `json:"User_Id"`
 	Task      string `json:"Task"`
 	Completed bool   `json:"Completed"`
+	Archived  bool   `json:"Archived"`
 }
 type Credentials struct {
 	Username string `json:"Username"`
