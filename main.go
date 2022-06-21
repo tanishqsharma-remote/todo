@@ -44,7 +44,9 @@ func main() {
 
 	r.Post("/signup", handler_dir.SignUp)
 	r.Post("/login", handler_dir.Login)
+	r.Get("/logout", handler_dir.Logout)
 	r.HandleFunc("/home", middleware_dir.AuthMiddleware(handler_dir.Home))
+	r.HandleFunc("/refresh", middleware_dir.RefreshMiddleware(handler_dir.Refresh))
 	r.Mount("/todo", todoHandlers())
 	err1 := http.ListenAndServe(":8080", r)
 	if err1 != nil {

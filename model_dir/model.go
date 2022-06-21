@@ -1,5 +1,7 @@
 package model_dir
 
+import "time"
+
 var JwtKey = []byte("MyKey")
 
 type User struct {
@@ -25,4 +27,11 @@ type Credentials struct {
 type Token struct {
 	Username    string `json:"Username"`
 	TokenString string `json:"Token"`
+}
+
+var Sessions = map[string]Session{}
+
+type Session struct {
+	Username string    `json:"Username"`
+	Expiry   time.Time `json:"Expiry"`
 }

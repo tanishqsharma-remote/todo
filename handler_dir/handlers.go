@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"io"
 	"log"
 	"net/http"
@@ -24,6 +25,14 @@ func Home(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(er)
 	}
 }
+func Refresh(w http.ResponseWriter, r *http.Request) {
+	id, _ := r.Context().Value("Id").(jwt.MapClaims)
+	_, er := fmt.Fprintf(w, "Session Refreshed %s\n", id)
+	if er != nil {
+		log.Fatal(er)
+	}
+}
+
 func SignUp(w http.ResponseWriter, r *http.Request) {
 	db := database_dir.DBconnect()
 	var item model_dir.User
@@ -67,7 +76,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ExpiryTime := time.Now().Add(time.Minute * 10).Unix()
-
+	Expires := time.Now().Add(time.Minute * 10)
+	sessionToken := uuid.NewString()
+	model_dir.Sessions[sessionToken] = model_dir.Session{
+		Username: authorized.Username,
+		Expiry:   Expires,
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:    "session_token",
+		Value:   sessionToken,
+		Expires: Expires,
+	})
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 
@@ -86,7 +105,24 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+func Logout(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie("session_token")
+	if err != nil {
+		log.Fatal(err)
+	}
+	sessionToken := c.Value
 
+	delete(model_dir.Sessions, sessionToken)
+	http.SetCookie(w, &http.Cookie{
+		Name:    "session_token",
+		Value:   "",
+		Expires: time.Now(),
+	})
+	_, er := io.WriteString(w, "Successfully Logged out")
+	if er != nil {
+		log.Fatal(er)
+	}
+}
 func CreateTask(w http.ResponseWriter, r *http.Request) {
 	db := database_dir.DBconnect()
 	var todoTask model_dir.Todolist
