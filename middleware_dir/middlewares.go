@@ -12,8 +12,8 @@ import (
 	"todo/model_dir"
 )
 
-func AuthMiddleware(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func AuthMiddleware(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		c, CookieErr := r.Cookie("session_token")
 		if CookieErr != nil {
@@ -52,11 +52,11 @@ func AuthMiddleware(handler http.HandlerFunc) http.HandlerFunc {
 			ctx := context.WithValue(r.Context(), "Id", claims)
 			handler.ServeHTTP(w, r.WithContext(ctx))
 		}
-	}
+	})
 }
 
-func RefreshMiddleware(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func RefreshMiddleware(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		c, CookieErr := r.Cookie("session_token")
 		if CookieErr != nil {
@@ -110,5 +110,5 @@ func RefreshMiddleware(handler http.HandlerFunc) http.HandlerFunc {
 			ctx := context.WithValue(r.Context(), "Id", claims)
 			handler.ServeHTTP(w, r.WithContext(ctx))
 		}
-	}
+	})
 }

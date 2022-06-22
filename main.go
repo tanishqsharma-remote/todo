@@ -42,12 +42,23 @@ func main() {
 	}
 	r := chi.NewRouter()
 
-	r.Post("/signup", handler_dir.SignUp)
-	r.Post("/login", handler_dir.Login)
-	r.Get("/logout", handler_dir.Logout)
-	r.HandleFunc("/home", middleware_dir.AuthMiddleware(handler_dir.Home))
-	r.HandleFunc("/refresh", middleware_dir.RefreshMiddleware(handler_dir.Refresh))
-	r.Mount("/todo", todoHandlers())
+	r.Group(func(r chi.Router) {
+		r.Post("/signup", handler_dir.SignUp)
+		r.Post("/login", handler_dir.Login)
+		r.Get("/logout", handler_dir.Logout)
+		r.Mount("/todo", todoHandlers())
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware_dir.AuthMiddleware)
+		r.Get("/home", handler_dir.Home)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware_dir.RefreshMiddleware)
+		r.Get("/refresh", handler_dir.Refresh)
+	})
+
 	err1 := http.ListenAndServe(":8080", r)
 	if err1 != nil {
 		log.Fatalf("Error")

@@ -140,8 +140,9 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 func GetTask(w http.ResponseWriter, r *http.Request) {
 	db := database_dir.DBconnect()
-
-	rows, err := db.Query("SELECT * FROM todolist order by task")
+	//query := "with pagingCTE as(SELECT user_id,task,completed,archived, row_number() over (order by task) as rowNumber FROM todolist)select * from pagingCTE where rowNumber between ($1-1)*$2+1 and $1*$2"
+	//rows, err := db.Exec(query, r.URL.Query()["pageNum"],r.URL.Query()["pageSize"])
+	rows, err := db.Query("with pagingCTE as(SELECT user_id,task,completed,archived, row_number() over (order by task) as rowNumber FROM todolist)select user_id,task,completed,archived from pagingCTE where rowNumber between ($1-1)*$2+1 and $1*$2", r.URL.Query().Get("pageNum"), r.URL.Query().Get("pageSize"))
 	if err != nil {
 		log.Fatal(err)
 	}
