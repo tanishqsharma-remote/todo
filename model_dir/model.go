@@ -5,33 +5,33 @@ import "time"
 var JwtKey = []byte("MyKey")
 
 type User struct {
-	Id       int    `json:"Id"`
-	Username string `json:"Username"`
-	Password string `json:"Password"`
+	Id       int    `json:"id"`
+	Username string `json:"userName"`
+	Password string `json:"passWord"`
 }
 
 type TodoTask struct {
-	Task string `json:"Task"`
+	Task string `json:"task"`
 }
 
 type Todolist struct {
-	UserId    int    `json:"User_Id"`
-	Task      string `json:"Task"`
-	Completed bool   `json:"Completed"`
-	Archived  bool   `json:"Archived"`
+	UserId    int    `json:"userId"`
+	Task      string `json:"task"`
+	Completed bool   `json:"completed"`
+	Archived  bool   `json:"archived"`
 }
 type Credentials struct {
-	Username string `json:"Username"`
-	Password string `json:"Password"`
+	Username string `json:"userName"`
+	Password string `json:"passWord"`
 }
 type Token struct {
-	Username    string `json:"Username"`
-	TokenString string `json:"Token"`
+	Username    string `json:"userName"`
+	TokenString string `json:"token"`
 }
 
 var Sessions = map[string]Session{}
 
 type Session struct {
-	Username string    `json:"Username"`
-	Expiry   time.Time `json:"Expiry"`
+	Username string    `json:"userName"`
+	Expiry   time.Time `json:"expiry"`
 }

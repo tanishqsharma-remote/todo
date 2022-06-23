@@ -15,11 +15,11 @@ import (
 func AuthMiddleware(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		c, CookieErr := r.Cookie("session_token")
-		if CookieErr != nil {
-			log.Fatal(CookieErr)
-		}
-		sessionToken := c.Value
+		//c, CookieErr := r.Cookie("session_token")
+		//if CookieErr != nil {
+		//	log.Fatal(CookieErr)
+		//}
+		sessionToken := r.Header.Get("sessionToken")
 
 		userSession, exists := model_dir.Sessions[sessionToken]
 		if !exists {
@@ -58,11 +58,11 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 func RefreshMiddleware(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		c, CookieErr := r.Cookie("session_token")
-		if CookieErr != nil {
-			log.Fatal(CookieErr)
-		}
-		sessionToken := c.Value
+		//c, CookieErr := r.Cookie("session_token")
+		//if CookieErr != nil {
+		//	log.Fatal(CookieErr)
+		//}
+		sessionToken := r.Header.Get("sessionToken")
 
 		userSession, exists := model_dir.Sessions[sessionToken]
 		if !exists {
@@ -83,12 +83,12 @@ func RefreshMiddleware(handler http.Handler) http.Handler {
 		}
 
 		delete(model_dir.Sessions, sessionToken)
-
-		http.SetCookie(w, &http.Cookie{
-			Name:    "session_token",
-			Value:   newSessionToken,
-			Expires: time.Now().Add(120 * time.Second),
-		})
+		w.Header().Add("sessionToken", newSessionToken)
+		//http.SetCookie(w, &http.Cookie{
+		//	Name:    "session_token",
+		//	Value:   newSessionToken,
+		//	Expires: time.Now().Add(120 * time.Second),
+		//})
 		var userToken model_dir.Token
 		DecodeErr := json.NewDecoder(r.Body).Decode(&userToken)
 		if DecodeErr != nil {

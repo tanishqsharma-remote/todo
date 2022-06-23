@@ -82,11 +82,25 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Username: authorized.Username,
 		Expiry:   Expires,
 	}
-	http.SetCookie(w, &http.Cookie{
+
+	/*http.SetCookie(w, &http.Cookie{
 		Name:    "session_token",
 		Value:   sessionToken,
 		Expires: Expires,
-	})
+	})*/
+	//EncodeEr := json.NewEncoder(w).Encode(model_dir.Sessions[sessionToken])
+	//if EncodeEr != nil {
+	//	log.Fatal(EncodeEr)
+	//}
+	//w.Header().Set("content-type", "application/json")
+
+	w.Header().Add("sessionToken", sessionToken)
+
+	/*jsonResp, _ := json.Marshal(sessionToken)
+	_, wErr := w.Write(jsonResp)
+	if err != nil {
+		log.Fatal(wErr)
+	}*/
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 
