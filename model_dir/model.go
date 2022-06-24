@@ -29,8 +29,6 @@ type Token struct {
 	TokenString string `json:"token"`
 }
 
-var Sessions = map[string]Session{}
-
 type Session struct {
 	Username string    `json:"userName"`
 	Expiry   time.Time `json:"expiry"`

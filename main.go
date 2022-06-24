@@ -13,17 +13,6 @@ import (
 	"todo/middleware_dir"
 )
 
-func todoHandlers() http.Handler {
-	rg := chi.NewRouter()
-	rg.Group(func(r chi.Router) {
-		r.Get("/", handler_dir.GetTask)
-		r.Post("/", handler_dir.CreateTask)
-		r.Put("/", handler_dir.DoneTask)
-		r.Delete("/", handler_dir.ArchiveTask)
-	})
-	return rg
-}
-
 func main() {
 
 	db := database_dir.DBconnect()
@@ -42,21 +31,30 @@ func main() {
 	}
 	r := chi.NewRouter()
 
-	r.Group(func(r chi.Router) {
+	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", handler_dir.SignUp)
 		r.Post("/login", handler_dir.Login)
 		r.Get("/logout", handler_dir.Logout)
-		r.Mount("/todo", todoHandlers())
 	})
 
-	r.Group(func(r chi.Router) {
+	r.Route("/todo", func(r chi.Router) {
+		r.Post("/", handler_dir.CreateTask)
+		r.Put("/", handler_dir.DoneTask)
+		r.Delete("/", handler_dir.ArchiveTask)
+		r.Group(func(r chi.Router) {
+			r.Use(middleware_dir.AuthMiddleware)
+			r.Get("/", handler_dir.GetTask)
+		})
+	})
+
+	r.Route("/home", func(r chi.Router) {
 		r.Use(middleware_dir.AuthMiddleware)
-		r.Get("/home", handler_dir.Home)
+		r.Get("/", handler_dir.Home)
 	})
 
-	r.Group(func(r chi.Router) {
+	r.Route("/refresh", func(r chi.Router) {
 		r.Use(middleware_dir.RefreshMiddleware)
-		r.Get("/refresh", handler_dir.Refresh)
+		r.Get("/", handler_dir.Refresh)
 	})
 
 	err1 := http.ListenAndServe(":8080", r)

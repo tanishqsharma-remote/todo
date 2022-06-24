@@ -6,29 +6,40 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"io"
 	"log"
 	"net/http"
 	"time"
+	"todo/database_dir"
 	"todo/model_dir"
 )
 
 func AuthMiddleware(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db := database_dir.DBconnect()
 
-		//c, CookieErr := r.Cookie("session_token")
-		//if CookieErr != nil {
-		//	log.Fatal(CookieErr)
-		//}
 		sessionToken := r.Header.Get("sessionToken")
-
-		userSession, exists := model_dir.Sessions[sessionToken]
-		if !exists {
+		rows, err := db.Query("select username,expiry from sessions where sessiontoken=$1", sessionToken)
+		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
+			io.WriteString(w, "Query error")
 			return
 		}
-		if userSession.Expiry.Before(time.Now()) {
-			delete(model_dir.Sessions, sessionToken)
+		var validSession model_dir.Session
+		for rows.Next() {
+			ScanErr := rows.Scan(&validSession.Username, &validSession.Expiry)
+			if ScanErr != nil {
+				log.Fatal(ScanErr)
+			}
+		}
+		if validSession.Expiry.Before(time.Now()) {
+			query := "delete from sessions where sessiontoken=$1"
+			_, execErr := db.Exec(query, sessionToken)
+			if execErr != nil {
+				log.Fatal(execErr)
+			}
 			w.WriteHeader(http.StatusUnauthorized)
+			io.WriteString(w, "exp error")
 			return
 		}
 		var userToken model_dir.Token
@@ -57,38 +68,44 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 
 func RefreshMiddleware(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db := database_dir.DBconnect()
 
-		//c, CookieErr := r.Cookie("session_token")
-		//if CookieErr != nil {
-		//	log.Fatal(CookieErr)
-		//}
 		sessionToken := r.Header.Get("sessionToken")
-
-		userSession, exists := model_dir.Sessions[sessionToken]
-		if !exists {
+		rows, err := db.Query("select username,expiry from sessions where sessiontoken=$1", sessionToken)
+		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		if userSession.Expiry.Before(time.Now()) {
-			delete(model_dir.Sessions, sessionToken)
+		var validSession model_dir.Session
+		for rows.Next() {
+			ScanErr := rows.Scan(&validSession.Username, &validSession.Expiry)
+			if ScanErr != nil {
+				log.Fatal(ScanErr)
+			}
+		}
+		if validSession.Expiry.Before(time.Now()) {
+			query := "delete from sessions where sessiontoken=$1"
+			_, execErr := db.Exec(query, sessionToken)
+			if execErr != nil {
+				log.Fatal(execErr)
+			}
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		newSessionToken := uuid.NewString()
 		expiresAt := time.Now().Add(120 * time.Second)
-
-		model_dir.Sessions[newSessionToken] = model_dir.Session{
-			Username: userSession.Username,
-			Expiry:   expiresAt,
+		_, qErr := db.Exec("insert into sessions(sessiontoken, username, expiry) VALUES ($1,$2,$3)", newSessionToken, validSession.Username, expiresAt)
+		if qErr != nil {
+			log.Fatal(qErr)
 		}
 
-		delete(model_dir.Sessions, sessionToken)
+		query := "delete from sessions where sessiontoken=$1"
+		_, execErr := db.Exec(query, sessionToken)
+		if execErr != nil {
+			log.Fatal(execErr)
+		}
 		w.Header().Add("sessionToken", newSessionToken)
-		//http.SetCookie(w, &http.Cookie{
-		//	Name:    "session_token",
-		//	Value:   newSessionToken,
-		//	Expires: time.Now().Add(120 * time.Second),
-		//})
+
 		var userToken model_dir.Token
 		DecodeErr := json.NewDecoder(r.Body).Decode(&userToken)
 		if DecodeErr != nil {

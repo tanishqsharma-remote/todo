@@ -46,7 +46,6 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	if er != nil {
 		log.Fatal(er)
 	}
-	//defer db.Close()
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -78,29 +77,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	ExpiryTime := time.Now().Add(time.Minute * 10).Unix()
 	Expires := time.Now().Add(time.Minute * 10)
 	sessionToken := uuid.NewString()
-	model_dir.Sessions[sessionToken] = model_dir.Session{
-		Username: authorized.Username,
-		Expiry:   Expires,
+
+	query := "insert into sessions(sessiontoken, username, expiry) VALUES ($1,$2,$3)"
+	_, exErr := db.Exec(query, sessionToken, authorized.Username, Expires)
+	if exErr != nil {
+		log.Fatal(exErr)
 	}
-
-	/*http.SetCookie(w, &http.Cookie{
-		Name:    "session_token",
-		Value:   sessionToken,
-		Expires: Expires,
-	})*/
-	//EncodeEr := json.NewEncoder(w).Encode(model_dir.Sessions[sessionToken])
-	//if EncodeEr != nil {
-	//	log.Fatal(EncodeEr)
-	//}
-	//w.Header().Set("content-type", "application/json")
-
 	w.Header().Add("sessionToken", sessionToken)
 
-	/*jsonResp, _ := json.Marshal(sessionToken)
-	_, wErr := w.Write(jsonResp)
-	if err != nil {
-		log.Fatal(wErr)
-	}*/
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 
@@ -120,18 +104,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 }
 func Logout(w http.ResponseWriter, r *http.Request) {
-	c, err := r.Cookie("session_token")
-	if err != nil {
-		log.Fatal(err)
+	db := database_dir.DBconnect()
+	sessionToken := r.Header.Get("sessionToken")
+	query := "delete from sessions where sessiontoken=$1"
+	_, execErr := db.Exec(query, sessionToken)
+	if execErr != nil {
+		log.Fatal(execErr)
 	}
-	sessionToken := c.Value
-
-	delete(model_dir.Sessions, sessionToken)
-	http.SetCookie(w, &http.Cookie{
-		Name:    "session_token",
-		Value:   "",
-		Expires: time.Now(),
-	})
 	_, er := io.WriteString(w, "Successfully Logged out")
 	if er != nil {
 		log.Fatal(er)
@@ -150,13 +129,13 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	if er != nil {
 		log.Fatal(er)
 	}
-	//defer db.Close()
 }
 func GetTask(w http.ResponseWriter, r *http.Request) {
+	id, _ := r.Context().Value("Id").(jwt.MapClaims)
+	userid := fmt.Sprint(id["Id"])
+
 	db := database_dir.DBconnect()
-	//query := "with pagingCTE as(SELECT user_id,task,completed,archived, row_number() over (order by task) as rowNumber FROM todolist)select * from pagingCTE where rowNumber between ($1-1)*$2+1 and $1*$2"
-	//rows, err := db.Exec(query, r.URL.Query()["pageNum"],r.URL.Query()["pageSize"])
-	rows, err := db.Query("with pagingCTE as(SELECT user_id,task,completed,archived, row_number() over (order by task) as rowNumber FROM todolist)select user_id,task,completed,archived from pagingCTE where rowNumber between ($1-1)*$2+1 and $1*$2", r.URL.Query().Get("pageNum"), r.URL.Query().Get("pageSize"))
+	rows, err := db.Query("with pagingCTE as(SELECT user_id,task,completed,archived, row_number() over (order by task) as rowNumber FROM todolist)select user_id,task,completed,archived from pagingCTE where user_id=$1 and rowNumber between ($2-1)*$3+1 and $2*$3", userid, r.URL.Query().Get("pageNum"), r.URL.Query().Get("pageSize"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -186,7 +165,6 @@ func GetTask(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 	}(rows)
-	//defer db.Close()
 }
 
 func DoneTask(w http.ResponseWriter, r *http.Request) {
