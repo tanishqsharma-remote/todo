@@ -30,7 +30,7 @@ func main() {
 	r := router_dir.Router()
 	err1 := http.ListenAndServe(":8080", r)
 	if err1 != nil {
-		log.Fatalf("Error")
+		log.Fatal("Error")
 		return
 	}
 
